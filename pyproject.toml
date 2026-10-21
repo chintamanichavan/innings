@@ -1,0 +1,49 @@
+[project]
+name = "innings"
+version = "0.1.0"
+description = "Cricket told through win chance, with a neural network that has read every ball"
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.1",
+    "pandas>=2.2",
+    "pyarrow>=17",
+    "numpy>=2.0",
+    "scikit-learn>=1.5",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "onnxruntime>=1.20",
+    "confluent-kafka>=2.8",
+]
+
+[project.optional-dependencies]
+# Only needed to train the neural network. The site serves the exported model with onnxruntime.
+train = ["torch>=2.7", "onnx>=1.17"]
+
+[project.scripts]
+innings = "innings.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+    "ruff>=0.16.10",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/innings"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# E/W style, F real errors, I import order, B likely bugs, UP outdated idioms, SIM needless complexity
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]  # line length is checked by tests/test_style.py, which also covers the page code
