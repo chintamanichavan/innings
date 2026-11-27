@@ -4,20 +4,73 @@ from __future__ import annotations
 
 import duckdb
 
+# Each side's score as a scorecard writes it: "155/8 (20 ov)", "142 (19.4 ov)" when all out,
+# and for a Test every innings: "445/6d & 102/3".
+SCORE_LINES = """
+    with innings as (
+        select e.match_id, e.innings, e.bat_team as team, m.format,
+               sum(e.runs) as runs, sum(e.outs) as wickets,
+               sum(case when e.wide or e.noball then 0 else 1 end) as balls,
+               max(e.innings) over (partition by e.match_id) as last_innings
+        from ck_events e join ck_matches m using (match_id)
+        group by e.match_id, e.innings, e.bat_team, m.format),
+    written as (
+        select match_id, team, innings,
+               runs || case when wickets >= 10 then ''
+                            else '/' || wickets
+                                 || case when format = 'Test' and innings < last_innings
+                                         then 'd' else '' end
+                       end
+               || case when format = 'Test' then ''
+                       else ' (' || balls // 6 || case when balls % 6 > 0 then '.' || balls % 6 else '' end
+                            || ' ov)' end as line
+        from innings)
+    select match_id, team, string_agg(line, ' & ' order by innings) as line
+    from written group by match_id, team
+"""
+
+# The result as a scorecard states it.
+RESULT = """
+    case when m.result = 'draw' then 'Match drawn'
+         when m.result = 'no result' then 'No result'
+         when m.result = 'tie' and m.winner is not null
+             then 'Match tied (' || m.winner || ' won the Super Over)'
+         when m.result = 'tie' then 'Match tied'
+         when m.method is not null then m.winner || ' won (' || m.method || ')'
+         when m.winner = m.team2 and m.format != 'Test' and m.max_balls > m.balls2 then
+             m.winner || ' won ' || m.note || ' (' || (m.max_balls - m.balls2) || ' balls left)'
+         else m.winner || ' won ' || m.note end
+"""
+
+
+# Which rendered picture a match's card shows (frontend/public/cards, made by animation/card_*.py):
+# a final gets the trophy, a run feast the six, a side bowled out the broken stumps.
+ART = """
+    case when m.stage = 'Final' then 'trophy'
+         when (m.format = 'T20' and greatest(m.score1, m.score2) >= 200)
+           or (m.format = 'ODI' and greatest(m.score1, m.score2) >= 330) then 'six'
+         when (m.winner = m.team1 and m.wkts2 >= 10) or (m.winner = m.team2 and m.wkts1 >= 10) then 'stumps'
+         else 'ground' end
+"""
+
 
 def _build_matches(con: duckdb.DuckDBPyConnection) -> None:
     """matches: one shape for every sport. `team1` always batted first.
 
     `league` is what a fan would call the competition. `pool` groups teams that play each
-    other, for ratings.
+    other, for ratings. `line1`, `line2` and `result` are the score as a fan reads it.
     """
-    con.execute("""
+    con.execute(f"""
         create or replace table matches as
-        select 'ck' as sport, match_id, date, year,
-               competition || case when gender = 'female' then ' (W)' else '' end as league,
-               competition || case when gender = 'female' then ' (W)' else '' end as pool,
-               format as fmt, venue, team1, team2, winner, score1, score2, note
-        from ck_matches
+        with lines as ({SCORE_LINES})
+        select 'ck' as sport, m.match_id, m.date, m.year,
+               m.competition || case when m.gender = 'female' then ' (W)' else '' end as league,
+               m.competition || case when m.gender = 'female' then ' (W)' else '' end as pool,
+               m.format as fmt, m.venue, m.team1, m.team2, m.winner, m.score1, m.score2, m.note,
+               one.line as line1, two.line as line2, {RESULT} as result, {ART} as art
+        from ck_matches m
+        left join lines one on one.match_id = m.match_id and one.team = m.team1
+        left join lines two on two.match_id = m.match_id and two.team = m.team2
     """)
 
 

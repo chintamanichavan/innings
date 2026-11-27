@@ -76,3 +76,55 @@ export interface Alike {
   fmt: string;
   match: number;
 }
+
+/** One format of a career, with the bat: as a profile's summary table shows it. */
+export interface BattingLine {
+  league: string;
+  matches: number;
+  innings: number;
+  not_outs: number;
+  runs: number;
+  best: string; // "254*"
+  average: number | null;
+  balls: number;
+  strike_rate: number | null;
+  hundreds: number;
+  fifties: number;
+  fours: number;
+  sixes: number;
+}
+
+export interface BowlingLine {
+  league: string;
+  matches: number;
+  innings: number;
+  balls: number;
+  runs: number;
+  wickets: number;
+  best: string; // "6/27"
+  average: number | null;
+  economy: number | null;
+  strike_rate: number | null;
+  fours: number;
+  fives: number;
+}
+
+export interface RecentGame {
+  match_id: string;
+  date: string;
+  league: string;
+  opponent: string | null;
+  batted: boolean;
+  runs: number;
+  faced: number;
+  out: boolean | null;
+  wickets: number;
+  conceded: number;
+  bowled: number;
+}
+
+export interface Career {
+  batting: BattingLine[];
+  bowling: BowlingLine[];
+  recent: RecentGame[];
+}

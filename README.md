@@ -16,8 +16,12 @@ come last.
 
 **For fans**
 - **Front page** – game of the week as a story, a form guide, a classic and a play of the day. Pick your teams and they lead the page.
-- **Match stories** – a headline, a standfirst, four plain paragraphs, the win-chance chart
-  with the biggest moment marked, and every key play as a sentence.
+- **Match centre** – the result, player of the match, and four tabs: Summary (scorecard in
+  brief, win probability in both teams' colours, the story), Scorecard, Commentary (every ball,
+  over by over, with end-of-over summaries) and Graphs (worm, run rate, Manhattan, partnerships).
+- **Profiles** – a career summary by format, as every profile opens (Mat, Inns, NO, Runs, HS, Ave,
+  SR, 100s, 50s; Wkts, BBI, Econ, 5w), recent form, then the deeper numbers.
+- **Teams** – the season's points table (P W L NR Pts NRR) and the squad by role.
 - **Puzzle corner** – a daily "Who am I?", Higher or Lower, and You vs the Model, with
   streaks and a shareable result.
 - **Records** – wildest games, biggest comebacks, biggest plays, best single games.
@@ -321,6 +325,16 @@ and Sky Sports. Innings shows the headline, one line of summary and a link to th
 it never copies an article. Live scores come from ESPNcricinfo's public live feed, which gives
 each match's score line and nothing finer, so live matches have no win chance or scorecard.
 A feed that fails is skipped, and feed text is treated as untrusted (`src/innings/feeds.py`).
+
+## Story-card pictures
+
+A match card shows one of four scenes, each modelled and rendered in Blender in shades of grey:
+the broadcast view down the pitch under floodlights (`animation/card_ground.py`), broken stumps
+for a side bowled out (`card_stumps.py`), a six into the lights for a high-scoring game
+(`card_six.py`) and a trophy for a final (`card_trophy.py`). The build picks one for every match
+(`ART` in `aggregates.py`). The page lays the picture over the two teams' colours and keeps only
+its light and shade, so four renders suit every match. `PREVIEW=1 blender -b -P
+animation/card_six.py` renders a quick, small version into `animation/check/`.
 
 ## The opening animation
 

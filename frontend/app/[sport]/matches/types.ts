@@ -11,4 +11,7 @@ export interface MatchRow {
   score2: number;
   winner: string | null;
   note: string | null;
+  line1: string | null;
+  line2: string | null;
+  result: string | null;
 }

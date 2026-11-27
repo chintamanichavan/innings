@@ -12,6 +12,10 @@ export interface MatchSummary {
   team2: string;
   score1: number | null;
   score2: number | null;
+  line1?: string | null; // each side's score as cricket writes it: "155/8 (20 ov)"
+  line2?: string | null;
+  result?: string | null; // "Royal Challengers Bengaluru won by 5 wickets (12 balls left)"
+  art?: "ground" | "stumps" | "six" | "trophy" | null; // the rendered picture behind its card
   winner: string | null;
   thrill?: number | null;
   headline?: string | null;

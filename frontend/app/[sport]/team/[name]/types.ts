@@ -26,4 +26,31 @@ export interface TeamPage {
   games: MatchSummary[];
   classics: MatchSummary[];
   lede: string[];
+  squad: SquadPlayer[];
+  table: TableRow[] | null;
+}
+
+export interface SquadPlayer {
+  player_id: string;
+  name: string;
+  role: "Batters" | "Wicketkeepers" | "All-rounders" | "Bowlers";
+  matches: number;
+  runs: number;
+  wickets: number;
+}
+
+/** One line of a league's points table. */
+export interface TableRow {
+  team: string;
+  played: number;
+  won: number;
+  lost: number;
+  no_result: number;
+  points: number;
+  net_run_rate: number;
+}
+
+export interface TeamSeason {
+  squad: SquadPlayer[];
+  table: TableRow[] | null; // only franchise leagues have one
 }

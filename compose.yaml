@@ -2,7 +2,7 @@ services:
   # The data and the models: Python and FastAPI. Reached only through the website.
   api:
     build: .
-    image: innings-api:0.14.0
+    image: innings-api:0.16.0
     container_name: innings-api
     restart: unless-stopped
     volumes:
@@ -35,7 +35,7 @@ services:
 
   # Replays past matches into Kafka, ball by ball, at the pace of a live game.
   bowler:
-    image: innings-api:0.14.0
+    image: innings-api:0.16.0
     container_name: innings-bowler
     restart: unless-stopped
     depends_on: [kafka, api]
@@ -47,7 +47,7 @@ services:
 
   # Reads each ball from Kafka, keeps the score, and adds the win chance.
   scorer:
-    image: innings-api:0.14.0
+    image: innings-api:0.16.0
     container_name: innings-scorer
     restart: unless-stopped
     depends_on: [kafka, api]
@@ -60,7 +60,7 @@ services:
   # The website: TypeScript and Next.js. Passes every /api request on to `api`.
   web:
     build: ./frontend
-    image: innings-web:0.19.0
+    image: innings-web:0.21.0
     container_name: innings-web
     restart: unless-stopped
     depends_on: [api]
@@ -72,7 +72,7 @@ services:
   # Downloads fresh data and rebuilds the models twice a day. The API picks up the new
   # database on its own.
   refresh:
-    image: innings-api:0.14.0
+    image: innings-api:0.16.0
     container_name: innings-refresh
     restart: unless-stopped
     depends_on: [api]

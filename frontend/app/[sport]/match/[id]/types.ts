@@ -38,3 +38,27 @@ export interface MatchPage {
   story: Story;
   call: { p1: number } | null;
 }
+
+/** One ball of commentary. `swing` is the batting side's change in win chance, when it is large. */
+export interface CommentaryBall {
+  at: string; // "17.3"
+  text: string; // "Siraj to Rashid Khan, FOUR"
+  mark: string; // "4", "W", "wd", "•"
+  wicket: string | null; // "Rashid Khan c Rohit b Siraj 7 (3), 140/6 (17.3 ov)"
+  swing: number | null;
+}
+
+export interface CommentaryOver {
+  over: number; // from 1
+  balls: CommentaryBall[];
+  end: {
+    runs: number;
+    score: string;
+    batters: { name: string; runs: number; balls: number }[];
+    bowler: { name: string; figures: string } | null;
+  };
+}
+
+export interface CommentaryData {
+  innings: { number: number; team: string; overs: CommentaryOver[] }[];
+}

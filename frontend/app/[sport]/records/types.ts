@@ -7,6 +7,8 @@ export interface RecordGame {
   team2: string;
   score1: number;
   score2: number;
+  line1: string | null;
+  line2: string | null;
   winner: string;
   thrill: number;
   winner_low: number;

@@ -68,9 +68,9 @@ export interface ScorecardData {
 
 const ALL_OUT = 10;
 
-/** "351 for 7", or "187" when the side was bowled out. */
+/** "351/7", or "187" when the side was bowled out. */
 export function total(innings: InningsCard): string {
-  return innings.wickets >= ALL_OUT ? String(innings.runs) : `${innings.runs} for ${innings.wickets}`;
+  return innings.wickets >= ALL_OUT ? String(innings.runs) : `${innings.runs}/${innings.wickets}`;
 }
 
 /** "India", or "India, 2nd innings" when a side bats twice. */

@@ -225,3 +225,42 @@ def test_players_most_alike_are_other_players_in_the_same_format():
     assert len(alike) == 5 and kohli not in {row["player_id"] for row in alike}
     assert {row["fmt"] for row in alike} == {extra["profile"][extra["role"]]["fmt"]}
     assert [row["match"] for row in alike] == sorted((row["match"] for row in alike), reverse=True)
+
+
+def test_scores_read_the_cricket_way():
+    final = get("/api/match/ck/1535465")["match"]                  # IPL 2026 final
+    assert final["line1"] == "155/8 (20 ov)" and final["line2"] == "161/5 (18 ov)"
+    assert final["result"] == "Royal Challengers Bengaluru won by 5 wickets (12 balls left)"
+    lords = get("/api/match/ck/1152847")["match"]                  # 2019 Ashes, Lord's: a draw
+    assert lords["line1"] == "258 & 258/5d" and lords["result"] == "Match drawn"
+
+
+def test_career_summary_by_format():
+    kohli = get("/api/find", term="Virat Kohli")["players"][0]["player_id"]
+    career = get(f"/api/career/{kohli}")
+    batting = {row["league"]: row for row in career["batting"]}
+    assert [row["league"] for row in career["batting"]][:3] == ["Test", "ODI", "T20I"]
+    odi = batting["ODI"]
+    assert odi["average"] == pytest.approx(odi["runs"] / (odi["innings"] - odi["not_outs"]))
+    assert odi["hundreds"] > 40 and odi["best"] == "183"
+    assert len(career["recent"]) == 10
+
+
+def test_team_page_has_points_table_and_squad():
+    page = get("/api/team", sport="ck", pool="IPL", team="Mumbai Indians")
+    table = page["table"]
+    assert len(table) == 10 and all(row["played"] == 14 for row in table)
+    assert all(row["points"] == 2 * row["won"] + row["no_result"] for row in table)
+    assert sum(row["won"] for row in table) == sum(row["lost"] for row in table)
+    assert [row["points"] for row in table] == sorted((row["points"] for row in table), reverse=True)
+    roles = {player["role"] for player in page["squad"]}
+    assert {"Batters", "Bowlers"} <= roles
+    assert get("/api/team", sport="ck", pool="T20I", team="India")["table"] is None
+
+
+def test_commentary_runs_ball_by_ball():
+    overs = get("/api/commentary/1535465")["innings"][0]["overs"]
+    assert len(overs) == 20 and overs[0]["balls"][0]["at"] == "0.1"
+    assert overs[-1]["end"]["score"] == "155/8"
+    wickets = [ball for over in overs for ball in over["balls"] if ball["wicket"]]
+    assert len(wickets) == 8 and all(ball["mark"] == "W" for ball in wickets)

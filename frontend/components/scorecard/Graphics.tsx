@@ -228,3 +228,49 @@ export function Partnerships({ innings }: { innings: InningsCard }) {
     </div>
   );
 }
+
+/** Each side's run rate after every over: the runs an over it had made so far. */
+export function RunRate({ all }: { all: InningsCard[] }) {
+  const [box, width] = useWidth();
+  if (!width) return <div ref={box} className="chart-slot" />;
+  const longest = Math.max(...all.map((innings) => innings.by_over.length));
+  const rates = all.map((innings) => innings.by_over.map((over) => over.score / over.over));
+  const highest = Math.max(6, ...rates.flat()) * 1.08;
+  const x = (over: number) => PAD.left + ((width - PAD.left - PAD.right) * over) / longest;
+  const y = (rate: number) => HEIGHT - PAD.bottom - ((HEIGHT - PAD.top - PAD.bottom) * rate) / highest;
+  return (
+    <div ref={box} className="chart-slot">
+      <Svg width={width} height={HEIGHT} label="Each side's run rate, over by over">
+        {ticks(highest, 4).map((rate) => (
+          <g key={rate}>
+            <line className="axis" x1={PAD.left} x2={width - PAD.right} y1={y(rate)} y2={y(rate)} />
+            <text x={PAD.left - 7} y={y(rate) + 4} textAnchor="end">
+              {rate}
+            </text>
+          </g>
+        ))}
+        {ticks(longest, 8)
+          .filter(Boolean)
+          .map((over) => (
+            <text key={over} x={x(over)} y={HEIGHT - 8} textAnchor="middle">
+              {over}
+            </text>
+          ))}
+        {all.map((innings, index) => (
+          <polyline
+            key={innings.number}
+            className="draw"
+            pathLength={1}
+            opacity={isSecondOfSide(innings, all) ? 0.5 : 1}
+            points={innings.by_over.map((over, at) => xy(x(over.over), y(rates[index][at]))).join(" ")}
+            fill="none"
+            stroke={colorOf(innings, all)}
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+          />
+        ))}
+      </Svg>
+      <Legend all={all} />
+    </div>
+  );
+}

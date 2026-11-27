@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ...config import FULL_MEMBERS, INTERNATIONAL
 from ...models.predict import FEATURES
-from .. import matches, stories, teams
+from .. import matches, squads, stories, teams
 from ..db import q
 from ..specs import known_sport, spec_for
 
@@ -109,6 +109,8 @@ def team_page(sport: str, pool: str, team: str):
         games=matches.cards(played, [sport, pool, team, team], "m.date desc", 12),
         classics=matches.cards("m.sport = ? and m.pool = ? and m.winner = ?", [sport, pool, team],
                                "s.excitement desc", 6),
+        squad=squads.squad(pool, team, year),
+        table=squads.points_table(pool, year) if squads.is_league(pool) else None,
     )
     page["lede"] = stories.team_lede(page)
     return page

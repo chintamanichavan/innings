@@ -3,10 +3,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { shortResult } from "@/components/matches";
 import { Crest, TeamLink } from "@/components/teams";
 import { api } from "@/lib/api";
 import { WORDS, day, num } from "@/lib/format";
 import { leaguesOf } from "@/lib/meta";
+import { splitLine } from "@/lib/score";
 import { type PageProps, readPage } from "@/lib/page";
 import { type Sport, link } from "@/lib/sport";
 import { yearsOf } from "@/lib/types";
@@ -27,21 +29,27 @@ function SideCells({
   match,
   team,
   score,
+  line,
 }: {
   sport: Sport;
   league: string;
   match: MatchRow;
   team: string;
   score: number;
+  line: string | null;
 }) {
   const won = match.winner === team ? "win" : "";
+  const { runs, overs } = line ? splitLine(line) : { runs: num(score), overs: "" };
   return (
     <>
       <td className={`l ${won}`}>
         <Crest team={team} size="sm" />
         <TeamLink sport={sport} league={league} team={team} />
       </td>
-      <td className={won}>{num(score)}</td>
+      <td className={`score-cell ${won}`}>
+        {runs}
+        {overs && <small> ({overs})</small>}
+      </td>
     </>
   );
 }
@@ -77,6 +85,7 @@ function MatchList({ sport, league, list }: { sport: Sport; league: string; list
                 match={match}
                 team={match.team1}
                 score={match.score1}
+                line={match.line1}
               />
               <SideCells
                 sport={sport}
@@ -84,8 +93,9 @@ function MatchList({ sport, league, list }: { sport: Sport; league: string; list
                 match={match}
                 team={match.team2}
                 score={match.score2}
+                line={match.line2}
               />
-              <td className="l sub">{match.note || ""}</td>
+              <td className="l sub">{shortResult(match)}</td>
               <td className="l dim">
                 {match.venue && <Link href={link(sport, "venue", match.venue)}>{match.venue}</Link>}
               </td>

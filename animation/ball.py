@@ -131,4 +131,5 @@ def main() -> None:
         studio.save_webp(scene, join_side_by_side(files), "ball.webp")
 
 
-main()
+if __name__ == "__main__":   # run as a script; other scenes import the ball from here
+    main()

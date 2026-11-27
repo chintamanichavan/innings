@@ -11,20 +11,22 @@ import { type PageProps, readPage } from "@/lib/page";
 import { SPORTS, type Sport } from "@/lib/sport";
 
 import { Actions } from "./Actions";
+import { CareerSummary } from "./Career";
 import { MostAlike } from "./Alike";
 import { SkillProfile, roleName } from "./Sections";
 import { GameLog, SeasonTables, SplitsSections } from "./Tables";
-import type { Basics, Extra, Role } from "./types";
+import type { Basics, Career, Extra, Role } from "./types";
 
 const PREVIEW_SENTENCES = 2;
 
 const load = cache(async (sport: Sport, id: string) => {
   const path = `${sport}/${encodeURIComponent(id)}`;
-  const [basics, extra] = await Promise.all([
+  const [basics, extra, career] = await Promise.all([
     api<Basics>(`player/${path}`),
     api<Extra>(`player-extra/${path}`),
+    api<Career>(`career/${encodeURIComponent(id)}`),
   ]);
-  return { basics, extra };
+  return { basics, extra, career };
 });
 
 export async function generateMetadata(props: PageProps<{ id: string }>): Promise<Metadata> {
@@ -40,7 +42,7 @@ export async function generateMetadata(props: PageProps<{ id: string }>): Promis
 
 export default async function Player(props: PageProps<{ id: string }>) {
   const { sport, args } = await readPage(props);
-  const { basics, extra } = await load(sport, args.id);
+  const { basics, extra, career } = await load(sport, args.id);
   const roles = (Object.keys(basics.roles) as Role[])
     .map((role) => roleName(sport, role))
     .join(" and ");
@@ -64,6 +66,7 @@ export default async function Player(props: PageProps<{ id: string }>) {
           ))}
         </div>
       </article>
+      <CareerSummary sport={sport} career={career} bowler={extra.role === "bowl"} />
       <SkillProfile sport={sport} profiles={extra.profiles} />
       <MostAlike sport={sport} id={args.id} alike={extra.alike} />
       <h2 className="label">Career value</h2>
@@ -75,9 +78,19 @@ export default async function Player(props: PageProps<{ id: string }>) {
           is average.
         </figcaption>
       </figure>
-      <SeasonTables sport={sport} roles={basics.roles} />
-      <SplitsSections sport={sport} roles={basics.roles} splits={extra.splits} />
-      <GameLog sport={sport} log={extra.log} />
+      {/* The long tables are for digging. They stay folded until asked for. */}
+      <details className="more">
+        <summary>Season by season</summary>
+        <SeasonTables sport={sport} roles={basics.roles} />
+      </details>
+      <details className="more">
+        <summary>Splits: by innings, phase and venue</summary>
+        <SplitsSections sport={sport} roles={basics.roles} splits={extra.splits} />
+      </details>
+      <details className="more">
+        <summary>Every game, with runs added</summary>
+        <GameLog sport={sport} log={extra.log} />
+      </details>
     </>
   );
 }

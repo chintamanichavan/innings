@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from .. import matches, players, scorecard
+from .. import career, commentary, matches, players, scorecard
 from ..db import q
 from ..specs import career_line, known_sport, season_lines, spec_for
 
@@ -87,6 +87,14 @@ def player_extra(sport: str, player_id: str):
     return players.extra(sport, player_id)
 
 
+@router.get("/career/{player_id}")
+def career_of(player_id: str):
+    """A career summary by format, as a profile opens, and the latest matches."""
+    if players.name_of("ck", player_id) is None:
+        raise HTTPException(404, "no such player")
+    return career.career(player_id)
+
+
 @router.get("/matches")
 def match_list(sport: str, league: str = "", year: int | None = None, team: str = "", limit: int = 200):
     where, params = "sport = ?", [sport]
@@ -99,7 +107,8 @@ def match_list(sport: str, league: str = "", year: int | None = None, team: str 
     if team:
         where += " and (team1 = ? or team2 = ?)"
         params += [team, team]
-    return q(f"""select match_id, date, league, venue, team1, team2, score1, score2, winner, note
+    return q(f"""select match_id, date, league, venue, team1, team2, score1, score2, winner, note,
+                        line1, line2, result
                  from matches where {where}
                  order by date desc, match_id desc limit ?""", [*params, min(limit, MAX_MATCHES)])
 
@@ -117,6 +126,12 @@ def team_names(sport: str, league: str):
 def scorecard_of(match_id: str):
     """A cricket match's batting and bowling cards, and the numbers behind its graphics."""
     return scorecard.scorecard(match_id)
+
+
+@router.get("/commentary/{match_id}")
+def commentary_of(match_id: str):
+    """Every ball, over by over, with a summary at the end of each over."""
+    return commentary.commentary(match_id)
 
 
 @router.get("/match/{sport}/{match_id}")

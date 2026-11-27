@@ -2,8 +2,9 @@
 
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useId } from "react";
 
+import { identity } from "@/lib/teams";
 import type { WinEvent } from "@/lib/types";
 
 import { Crosshair, NARROW, Svg, clamp, useWidth, xy } from "./base";
@@ -22,6 +23,31 @@ interface WinChartProps<Event extends WinEvent> {
 
 type Scale = (value: number) => number;
 
+/** The over a play was in, from its "17.3" label; null when the play has no label. */
+function overOf(event: WinEvent): number | null {
+  const at = (event as WinEvent & { at?: string }).at;
+  return at ? Number(at.split(".")[0]) : null;
+}
+
+/** Small over numbers along the bottom: every 5 overs in a T20, 10 in a one-day game, 25 in a Test. */
+function overMarks(events: WinEvent[], x: Scale, bottom: number) {
+  const longest = Math.max(0, ...events.map((event) => overOf(event) ?? 0));
+  if (!longest) return null;
+  const step = longest < 20 ? 5 : longest < 50 ? 10 : 25;
+  return events.map((event, index) => {
+    const over = overOf(event);
+    const previous = events[index - 1];
+    const starts =
+      over != null && over > 0 && over % step === 0 && (!previous || overOf(previous) !== over);
+    if (!starts || previous?.period !== event.period) return null;
+    return (
+      <text key={`o${index}`} className="tick" x={x(index)} y={bottom + 12} textAnchor="middle">
+        {over}
+      </text>
+    );
+  });
+}
+
 function periodMarks(events: WinEvent[], width: number, x: Scale, top: number, bottom: number) {
   const room = width < NARROW ? 44 : 78; // pixels a label needs
   const marks: ReactNode[] = [];
@@ -35,7 +61,7 @@ function periodMarks(events: WinEvent[], width: number, x: Scale, top: number, b
     if (at - lastLabelAt < room) return;
     const innings = INNINGS_NAMES[event.period - 1] + (width < NARROW ? "" : " innings");
     marks.push(
-      <text key={`t${index}`} x={at + 4} y={bottom + 19}>
+      <text key={`t${index}`} x={at + 4} y={bottom + 26}>
         {innings}
       </text>,
     );
@@ -79,13 +105,15 @@ function BiggestMoment({ cx, cy, width, top }: { cx: number; cy: number; width: 
 export function WinChart<Event extends WinEvent>(props: WinChartProps<Event>) {
   const { events, team1, team2, turning = null, tipOf, compact = false, upto = null } = props;
   const [box, width] = useWidth();
+  const clip = useId(); // a page can hold several charts, and each needs its own clip shapes
   if (!width || !events.length) return <div ref={box} className="chart-slot" />;
 
-  const height = Math.round(compact ? clamp(170, width * 0.3, 230) : clamp(220, width * 0.34, 340));
-  const left = 40,
+  const height = Math.round(compact ? clamp(180, width * 0.3, 240) : clamp(230, width * 0.34, 350));
+  const left = 46,
     right = 14,
     top = 22,
-    bottom = height - 28;
+    bottom = height - 36;
+  const [one, two] = [identity(team1), identity(team2)];
   const count = events.length;
   const x: Scale = (index) => left + ((width - left - right) * index) / count;
   const y: Scale = (chance) => top + (bottom - top) * (1 - chance);
@@ -104,23 +132,43 @@ export function WinChart<Event extends WinEvent>(props: WinChartProps<Event>) {
         <line className="axis" x1={left} x2={width - right} y1={y(1)} y2={y(1)} />
         <line className="axis" x1={left} x2={width - right} y1={y(0)} y2={y(0)} />
         <line className="ref" x1={left} x2={width - right} y1={y(0.5)} y2={y(0.5)} />
-        {[0, 0.5, 1].map((chance) => (
-          <text key={chance} x={left - 7} y={y(chance) + 4} textAnchor="end">
-            {chance * 100}%
-          </text>
-        ))}
-        <text className="strong" x={left + 6} y={y(1) + 15}>
-          ↑ {team1} winning
+        {/* 100% at the top is a sure win for the first side; 100% at the bottom, for the second. */}
+        <text className="strong" x={left - 7} y={y(1) + 4} textAnchor="end" style={{ fill: one.color }}>
+          {one.code}
         </text>
-        <text className="strong" x={left + 6} y={y(0) - 7}>
-          ↓ {team2} winning
+        <text x={left - 7} y={y(0.75) + 4} textAnchor="end">
+          75%
+        </text>
+        <text x={left - 7} y={y(0.5) + 4} textAnchor="end">
+          50%
+        </text>
+        <text x={left - 7} y={y(0.25) + 4} textAnchor="end">
+          75%
+        </text>
+        <text className="strong" x={left - 7} y={y(0) + 4} textAnchor="end" style={{ fill: two.color }}>
+          {two.code}
         </text>
         {periodMarks(events, width, x, top, bottom)}
-        <polygon
-          points={`${left},${y(0.5)} ${line} ${endX},${y(0.5)}`}
-          fill="var(--ink)"
-          opacity=".06"
-        />
+        {overMarks(events, x, bottom)}
+        {/* The area is the first side's colour while it leads, the second side's while it trails. */}
+        <clipPath id={`above${clip}`}>
+          <rect x={left} y={top} width={width - left - right} height={y(0.5) - top} />
+        </clipPath>
+        <clipPath id={`below${clip}`}>
+          <rect x={left} y={y(0.5)} width={width - left - right} height={bottom - y(0.5)} />
+        </clipPath>
+        {[
+          [`above${clip}`, one.color],
+          [`below${clip}`, two.color],
+        ].map(([clip, color]) => (
+          <polygon
+            key={clip}
+            clipPath={`url(#${clip})`}
+            points={`${left},${y(0.5)} ${line} ${endX},${y(0.5)}`}
+            fill={color}
+            opacity=".32"
+          />
+        ))}
         {/* The line sweeps in once, when the chart first appears. A replay draws it plain. */}
         <polyline
           className={upto == null ? "draw" : ""}

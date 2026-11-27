@@ -8,7 +8,8 @@ from . import stories
 from .db import per_database, q
 
 COLUMNS = """m.sport, m.match_id, m.date, m.year, m.league, m.fmt, m.venue, m.team1, m.team2,
-             m.score1, m.score2, m.winner, m.note, s.excitement, s.thrill, s.winner_low, s.lead_changes"""
+             m.score1, m.score2, m.winner, m.note, m.line1, m.line2, m.result, m.art,
+             s.excitement, s.thrill, s.winner_low, s.lead_changes"""
 SOURCE = "from matches m join match_stats s using (sport, match_id)"
 
 _members = ", ".join(f"'{t}'" for t in sorted(FULL_MEMBERS))

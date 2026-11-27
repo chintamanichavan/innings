@@ -13,6 +13,7 @@ import { type PageProps, readPage } from "@/lib/page";
 import { SPORTS } from "@/lib/sport";
 
 import { Actions } from "./Actions";
+import { PointsTable, Squad } from "./SeasonParts";
 import { Leaders, SeasonsTable } from "./Sections";
 import type { TeamPage } from "./types";
 
@@ -53,6 +54,24 @@ export default async function Team(props: PageProps<{ name: string }>) {
           ))}
         </div>
       </article>
+      <div className={page.table ? "cols2 season-pair" : ""}>
+        {page.table && (
+          <section>
+            <h2 className="label">
+              {pool} {page.year}: points table
+            </h2>
+            <PointsTable sport={sport} pool={pool} team={page.team} rows={page.table} />
+            <p className="note">League stage. The line marks the four playoff places.</p>
+          </section>
+        )}
+        <section>
+          <h2 className="label">Squad, {page.year}</h2>
+          <Squad sport={sport} players={page.squad} />
+          <p className="note">
+            Roles are read from what each player did. m matches, r runs, w wickets.
+          </p>
+        </section>
+      </div>
       <h2 className="label">Strength over time</h2>
       <figure>
         <LineChart points={history} label="Rating" reference={AVERAGE_RATING} />

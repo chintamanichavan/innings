@@ -46,7 +46,8 @@ function GamesTable({ sport, games }: { sport: Sport; games: RecordGame[] }) {
               <td className="l">{day(game.date)}</td>
               <td className="l">
                 <Link className="u" href={link(sport, "match", game.match_id)}>
-                  {game.team1} {num(game.score1)}, {game.team2} {num(game.score2)}
+                  {game.team1} {game.line1 ?? num(game.score1)}, {game.team2}{" "}
+                  {game.line2 ?? num(game.score2)}
                 </Link>
               </td>
               <td className="l">

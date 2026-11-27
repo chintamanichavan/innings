@@ -8,13 +8,14 @@ import { Media, ThrillChip } from "@/components/matches";
 import { day, num, pct } from "@/lib/format";
 import { type Sport, link, teamHref } from "@/lib/sport";
 
-import type { MatchDetail, MatchPage } from "./types";
+import type { MatchDetail, MatchPage, PlayerLine } from "./types";
 
 interface HeroProps {
   sport: Sport;
   match: MatchDetail;
   story: MatchPage["story"];
   call: MatchPage["call"];
+  star: PlayerLine | null; // the player who added the most win chance
 }
 
 /** What we said before the match, and whether it came true. */
@@ -55,13 +56,26 @@ function Chips({ sport, match, headline }: { sport: Sport; match: MatchDetail; h
       {match.winner_low != null && (
         <span className="chip">Winner&apos;s lowest point {num(match.winner_low * 100, 1)}%</span>
       )}
-      {match.fmt === "Test" && <span>Scores are totals across both innings</span>}
       <ShareButton title={headline} />
     </div>
   );
 }
 
-export function Hero({ sport, match, story, call }: HeroProps) {
+/** Our player of the match: whoever added the most win chance, with their line from the game. */
+function Star({ sport, star }: { sport: Sport; star: PlayerLine }) {
+  return (
+    <p className="star">
+      <span className="sb-label">Player of the match</span>
+      <Link className="u" href={link(sport, "player", star.player_id)}>
+        {star.name}
+      </Link>
+      {star.line && <span> · {star.line}</span>}
+      <span className="dim"> · +{num(star.wpa * 100)} points of win chance</span>
+    </p>
+  );
+}
+
+export function Hero({ sport, match, story, call, star }: HeroProps) {
   return (
     <div className="card hero story-hero">
       <Media match={match} wide />
@@ -74,10 +88,12 @@ export function Hero({ sport, match, story, call }: HeroProps) {
             </span>
           )}
         </p>
+        {match.result && <p className="result-line big">{match.result}</p>}
         <h1>{story.headline}</h1>
         <p className="standfirst">
           <Marked text={story.standfirst} />
         </p>
+        {star && star.wpa > 0 && <Star sport={sport} star={star} />}
         {call && <OurCall sport={sport} match={match} call={call} />}
         <Chips sport={sport} match={match} headline={story.headline} />
       </div>

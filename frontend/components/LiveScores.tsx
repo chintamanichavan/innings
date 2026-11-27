@@ -30,7 +30,6 @@ function Match({ match }: { match: LiveMatch }) {
         <Side side={match.first} />
         <Side side={match.second} />
       </div>
-      {!match.started && <div className="meta">Yet to start</div>}
     </a>
   );
 }
@@ -60,15 +59,43 @@ export function LiveScores({ limit, grid = false }: LiveScoresProps) {
 
   if (!scores) return null;
   if (!scores.ok) return <p className="note">The live scores feed is not answering just now.</p>;
-  const matches = scores.matches.slice(0, limit);
-  if (!matches.length) return <p className="note">No matches are being played right now.</p>;
+  if (!scores.matches.length) return <p className="note">No matches are being played right now.</p>;
+  // Matches under way get a scorebox each. Those yet to start are only fixtures: one line each.
+  const playing = scores.matches.filter((match) => match.started).slice(0, limit);
+  const coming = scores.matches
+    .filter((match) => !match.started)
+    .slice(0, limit ? limit - playing.length : undefined);
   return (
     <>
-      <div className={grid ? "live-grid" : ""}>
-        {matches.map((match) => (
-          <Match key={match.link} match={match} />
-        ))}
-      </div>
+      {playing.length > 0 && (
+        <div className={grid ? "live-grid" : ""}>
+          {playing.map((match) => (
+            <Match key={match.link} match={match} />
+          ))}
+        </div>
+      )}
+      {coming.length > 0 && (
+        <>
+          <p className="sb-label coming-label">Coming up</p>
+          <div className={`fixtures ${grid ? "grid" : ""}`}>
+            {coming.map((match) => (
+              <a
+                key={match.link}
+                className="fixture"
+                href={match.link}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Crest team={siteTeamName(match.first.team)} size="sm" />
+                <span>
+                  {match.first.team} <i>v</i> {match.second.team}
+                </span>
+                <Crest team={siteTeamName(match.second.team)} size="sm" />
+              </a>
+            ))}
+          </div>
+        </>
+      )}
       <p className="note">
         Live scores from {scores.source}, read every two minutes. A row opens the match on their site.
       </p>
