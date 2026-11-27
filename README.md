@@ -108,6 +108,7 @@ src/innings/
     predict.py         one pass through history, then a small model, tested on unseen years
     common.py          what the models share: RAE, WPA, scoring a model
   aggregates.py        season lines, one match list, lineups
+  tagging.py           hand tags: the append-only log, joining to Cricsheet, kappa, backup
   insights.py          thrill, biggest plays, splits, clutch, skill profiles, form
   balls.py             playing styles, and one wide row a ball that every slice reads
   web/
@@ -330,6 +331,30 @@ Baseline, 26 Nov 2026 (17,646 matches, 6,592,369 balls):
 | Two builds from the same files | all 29 tables equal |
 | Slowest pages, warm median | player 73 ms, player extra 61 ms, front page 60 ms |
 | Every other page, warm median | under 20 ms |
+
+## Tagging balls by hand
+
+Cricsheet says what happened on each ball, not how it was bowled or hit. The tagging tool at
+`/cricket/tag` lets a person watching a match record that from the keyboard: delivery, pace,
+angle, line, length, shot, contact, where the ball went (eight zones, ground or air, inside or
+outside the ring) and, optionally, the video time. A number key picks a value and moves to the
+next field; space means "could not see"; the last field saves the ball. Pace and angle start
+from the bowler's last tagged ball. The pilot is SMAT 2026 death overs.
+
+Each tag names its Cricsheet ball and keeps the runs, extras and wicket the scorecard gave, so a
+later download that changes the ball is caught. Tags are the one source that cannot be
+downloaded again, so they live outside the database, in an append-only log,
+`data/tags/log.jsonl`. A re-tag adds a line; the latest line for a tagger and a ball counts.
+Each tagger sees only their own tags, so a second tagger tags blind.
+
+```
+uv run innings tags check              # how many tags join to a Cricsheet ball; the review queue
+uv run innings tags agree ann bob      # per field: balls both tagged, share agreed, kappa
+uv run innings tags backup <folder>    # a dated, compressed copy, read back and checked
+```
+
+Agreement is Cohen's kappa, linearly weighted for pace, line and length, whose values are in
+order. With one tagger the tags are single-rater data, and no reliability is claimed.
 
 ## Known limits
 

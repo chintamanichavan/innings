@@ -36,6 +36,7 @@ const SECTION_OF: Record<string, string> = {
   venue: "sections",
   venues: "sections",
   compare: "sections",
+  tag: "sections",
 };
 const TAB_OF: Record<string, string> = {
   front: "front",
