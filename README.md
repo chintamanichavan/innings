@@ -156,7 +156,7 @@ plain numbers; the TypeScript only plays it back.
 | State | balls left, wickets down | wickets down, lead, match balls bowled |
 | State value | boosted model, monotone in balls and wickets | runs left in the innings, by wickets |
 | Win probability | balls, wickets, runs needed, edge over par | win / draw / loss; a draw counts half |
-| Data | Cricsheet: IPL, BBL, PSL, CPL, SA20, T20Is, ODIs (from 2002) | Cricsheet Tests (from 2001) |
+| Data | Cricsheet: T20Is, ODIs (from 2002), 16 T20 leagues (below) | Cricsheet Tests (from 2001) |
 
 RAE = runs scored + state value after − state value before.
 WPA = win chance after − win chance before.
@@ -311,6 +311,11 @@ not on the stream.
   about 60 kB of data.
 
 ## Known limits
+
+- T20 leagues loaded: IPL, BBL, PSL, CPL, SA20, and for scouting the Syed Mushtaq Ali Trophy
+  (SMAT), T20 Blast, BPL, ILT20, LPL, MLC, Nepal Premier League, Super Smash and CSA T20;
+  for women the WPL, Women's Big Bash and Super Smash. The Hundred is left out: a 100-ball
+  innings needs its own win model. Cricsheet's SMAT has gaps (no 2025 season, 8 matches in 2024).
 
 - A bowler has one type: the first style their infobox lists. Part-timers who bowl two kinds
   are counted as the first.

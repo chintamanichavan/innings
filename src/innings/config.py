@@ -41,7 +41,9 @@ CRICKET_FORMATS = {
 }
 CK_BALLS = {name: fmt.balls for name, fmt in CRICKET_FORMATS.items()}
 
-# Cricsheet archives to load: archive code -> (competition label, format).
+# Cricsheet archives to load: archive code -> (competition label, format). A women's match
+# gets " (W)" after its label when it is stored, so "wbb" shows as "BBL (W)".
+# The Hundred is left out: its 100-ball innings would need its own win model.
 CK_ARCHIVES = {
     "ipl": ("IPL", "T20"),
     "bbl": ("BBL", "T20"),
@@ -51,6 +53,18 @@ CK_ARCHIVES = {
     "t20s": ("T20I", "T20"),
     "odis": ("ODI", "ODI"),
     "tests": ("Test", "Test"),
+    # Other T20 leagues, for scouting players the big leagues have not found yet.
+    "sma": ("SMAT", "T20"),           # Syed Mushtaq Ali Trophy, India's domestic T20
+    "ntb": ("T20 Blast", "T20"),
+    "bpl": ("BPL", "T20"),
+    "ilt": ("ILT20", "T20"),
+    "lpl": ("LPL", "T20"),
+    "mlc": ("MLC", "T20"),
+    "npl": ("NPL", "T20"),            # Nepal Premier League
+    "ssm": ("Super Smash", "T20"),
+    "ctc": ("CSA T20", "T20"),
+    "wpl": ("WPL", "T20"),
+    "wbb": ("BBL", "T20"),
 }
 INTERNATIONAL = ("T20I", "ODI", "Test")   # league names start with one of these for national sides
 

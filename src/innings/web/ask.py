@@ -81,7 +81,12 @@ FIXED: dict[str, tuple[str, str]] = {
     "leaders": ("by", "player"), "leaderboard": ("by", "player"), "who": ("by", "player"),
 }
 LEAGUES = {"ipl": "IPL", "bbl": "BBL", "big bash": "BBL", "psl": "PSL", "cpl": "CPL", "sa20": "SA20",
-           "t20i": "T20I", "t20is": "T20I", "womens t20i": "T20I (W)", "womens odi": "ODI (W)"}
+           "t20i": "T20I", "t20is": "T20I", "womens t20i": "T20I (W)", "womens odi": "ODI (W)",
+           "smat": "SMAT", "syed mushtaq ali": "SMAT", "mushtaq ali": "SMAT", "blast": "T20 Blast",
+           "t20 blast": "T20 Blast", "vitality blast": "T20 Blast", "bpl": "BPL", "ilt20": "ILT20",
+           "lpl": "LPL", "mlc": "MLC", "major league cricket": "MLC", "npl": "NPL",
+           "super smash": "Super Smash", "csa t20": "CSA T20", "wpl": "WPL (W)", "wbbl": "BBL (W)",
+           "womens big bash": "BBL (W)"}
 # Short names fans use for sides. Others are found by their full name.
 CODES = {"csk": "Chennai Super Kings", "mi": "Mumbai Indians", "rcb": "Royal Challengers Bengaluru",
          "kkr": "Kolkata Knight Riders", "srh": "Sunrisers Hyderabad", "dc": "Delhi Capitals",
