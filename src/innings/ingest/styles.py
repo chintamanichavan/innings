@@ -37,6 +37,7 @@ TITLES_PER_ASK = 50     # the most article texts Wikipedia returns in one reques
 # Wikipedia allows a client that sends no contact details 10 requests a minute.
 PAUSE = 7               # seconds between requests
 TRIES = 6
+LONGEST_WAIT = 120      # seconds; a longer "come back later" is cut to this
 
 # ---- reading an infobox ----
 
@@ -82,7 +83,9 @@ def _get(url: str, params: dict, accept: str = "application/json") -> bytes:
             if error.code not in (429, 503) or attempt == TRIES - 1:
                 raise
             told = error.headers.get("Retry-After", "")
-            time.sleep(float(told) if told.isdigit() else wait)
+            pause = min(float(told) if told.isdigit() else wait, LONGEST_WAIT)
+            print(f"styles: {error.code}, waiting {pause:.0f}s", flush=True)
+            time.sleep(pause)
             wait *= 2
     raise AssertionError("unreachable")
 
@@ -151,6 +154,7 @@ def ingest(con: duckdb.DuckDBPyConnection, refresh: bool) -> None:
     new = [player for player in _wanted(con) if player not in cache]
     if not new:
         return
+    print(f"styles: looking up {len(new)} players", flush=True)
     articles, keys = _articles(), _cricinfo_ids()
     title_of = {player: next((articles[key] for key in keys.get(player, []) if key in articles), "")
                 for player in new}
@@ -168,5 +172,7 @@ def ingest(con: duckdb.DuckDBPyConnection, refresh: bool) -> None:
             cache[player] = dict(player_id=player, article=title_of[player],
                                  batting=field(text, "batting"), bowling=field(text, "bowling"))
         _write_cache(cache)
+        done = min(start + TITLES_PER_ASK, len(asking))
+        print(f"styles: {done} of {len(asking)} articles read", flush=True)
         time.sleep(PAUSE)
     print(f"styles: asked about {len(new)} players, {len(asking)} had an article", flush=True)
