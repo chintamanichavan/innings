@@ -47,7 +47,7 @@ export interface Column {
   digits: number;
 }
 
-const SIGNED_COLUMNS = ["rae", "rate", "wpa", "clutch"];
+const SIGNED_COLUMNS = ["rae", "rate", "wpa", "clutch", "waa"];
 
 /** One table cell, formatted the way its column expects. */
 export function cell(column: Column, value: Maybe): string {
