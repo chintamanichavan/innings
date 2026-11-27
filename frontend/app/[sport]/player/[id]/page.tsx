@@ -1,6 +1,7 @@
 // One player: who they are in words, their skills, and the full numbers.
 
 import type { Metadata } from "next";
+import Link from "next/link";
 import { cache } from "react";
 
 import { Face } from "@/components/teams";
@@ -8,7 +9,9 @@ import { LineChart } from "@/components/charts/LineChart";
 import { Marked } from "@/components/Marked";
 import { ApiError, api } from "@/lib/api";
 import { type PageProps, readPage } from "@/lib/page";
-import { SPORTS, type Sport } from "@/lib/sport";
+import { SliceTable } from "@/components/SliceTable";
+import type { SliceAnswer, SliceQuery } from "@/lib/slices";
+import { SPORTS, type Sport, link } from "@/lib/sport";
 
 import { Actions } from "./Actions";
 import { CareerSummary } from "./Career";
@@ -29,6 +32,10 @@ const load = cache(async (sport: Sport, id: string) => {
   return { basics, extra, career };
 });
 
+/** A batter against each bowling type, or a bowler against each batting hand. */
+const matchupOf = (id: string, role: Role): SliceQuery =>
+  role === "bat" ? { role, batter: id, by: "type" } : { role, bowler: id, by: "hand" };
+
 export async function generateMetadata(props: PageProps<{ id: string }>): Promise<Metadata> {
   const { sport, args } = await readPage(props);
   try {
@@ -43,6 +50,8 @@ export async function generateMetadata(props: PageProps<{ id: string }>): Promis
 export default async function Player(props: PageProps<{ id: string }>) {
   const { sport, args } = await readPage(props);
   const { basics, extra, career } = await load(sport, args.id);
+  const matchup = matchupOf(args.id, extra.role);
+  const matchups = await api<SliceAnswer>("slice", matchup);
   const roles = (Object.keys(basics.roles) as Role[])
     .map((role) => roleName(sport, role))
     .join(" and ");
@@ -69,6 +78,13 @@ export default async function Player(props: PageProps<{ id: string }>) {
       <CareerSummary sport={sport} career={career} bowler={extra.role === "bowl"} />
       <SkillProfile sport={sport} profiles={extra.profiles} />
       <MostAlike sport={sport} id={args.id} alike={extra.alike} />
+      <h2 className="label">Matchups</h2>
+      <SliceTable sport={sport} answer={matchups} sort="" sortable={false} />
+      <p className="note">
+        <Link href={link(sport, "matchups", "", { ...matchup })}>
+          Every matchup: by bowler, phase, ground and year
+        </Link>
+      </p>
       <h2 className="label">Career value</h2>
       <figure>
         <LineChart points={extra.series} label="Runs above average so far" reference={0} />

@@ -36,6 +36,10 @@ export default async function Frame({ children, params }: FrameProps) {
           Cricket: ball-by-ball data from <a href="https://cricsheet.org">Cricsheet</a>, under the ODC
           Attribution License.
         </p>
+        <p>
+          Batting hands and bowling styles from <a href="https://en.wikipedia.org">Wikipedia</a> player
+          pages, under CC BY-SA.
+        </p>
       </footer>
       <TabBar sport={sport} />
       <TeamSheet />

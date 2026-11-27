@@ -33,6 +33,19 @@ come last.
   page shows each team's title odds settling. Below it, real matches replay live through the
   same broker. See "A season, 100,000 times" below.
 
+**Stats you can cut any way**
+- **Ask** (`/cricket/ask`) – type a question in plain words: "Kohli vs leg spin since 2020",
+  "best death bowlers IPL 2025", "MI vs CSK 2020-2023". The page shows how each word was read,
+  lists the words it could not place, and answers with a table. The question is in the address,
+  so an answer is a link to share.
+- **Matchups** (`/cricket/matchups`) – a batter against bowlers, or a bowler against batters:
+  by bowling type, batting hand, phase, ground, opponent, league or year. Head to head when
+  both are named. Every player page opens with theirs.
+- **Impact** (`/cricket/impact`) – who changes games, for any league, year and phase: runs
+  added above average (RAE), win chance added (WPA), and for bowlers wickets above average
+  (W+): wickets taken minus those an average bowler takes on the same balls. Below, the single
+  innings and spells that swung matches most.
+
 **Underneath**
 - **Stats** – leaderboards, splits, game logs, team rating history, venues, compare.
 - **Player value** – RAE (runs above expected), WPA (win probability added) and Clutch.
@@ -85,7 +98,8 @@ needs the graphics card; it leaves its results in `data/season/` for the site to
 ```
 src/innings/
   config.py            paths, what to load, and the shape of each cricket format
-  ingest/              the Cricsheet loader   -> every ball, with the game state before it
+  ingest/              the Cricsheet loader   -> every ball, with the game state before it;
+                       styles.py: batting hand and bowling style from Wikipedia infoboxes
   models/
     cricket_limited.py T20 and ODI: runs and win chance from balls left and wickets down
     cricket_test.py    Tests: no ball limit, four innings, and a draw is a result
@@ -95,10 +109,13 @@ src/innings/
     common.py          what the models share: RAE, WPA, scoring a model
   aggregates.py        season lines, one match list, lineups
   insights.py          thrill, biggest plays, splits, clutch, skill profiles, form
+  balls.py             playing styles, and one wide row a ball that every slice reads
   web/
     db.py              read-only queries; reopens when a rebuild swaps the file
     stories.py         turns plays, matches, players and teams into plain sentences
     scorecard.py       batting and bowling cards, fall of wickets, partnerships, runs per over
+    slices.py          any filter over every ball, counted as a batting or bowling line
+    ask.py             a question in plain words read into a slice; a fixed vocabulary, no AI
     matches, players, teams, forecasts   one module per subject
     routes/            the JSON API, one file per section of the site
   season/              one season played many times: the big batch job
@@ -295,6 +312,11 @@ not on the stream.
 
 ## Known limits
 
+- A bowler has one type: the first style their infobox lists. Part-timers who bowl two kinds
+  are counted as the first.
+- In a matchup, `Out` counts only the striker's own dismissals; a non-striker run out belongs
+  to no matchup. Career tables count every dismissal, so the two can differ by a few.
+
 - No credit for fielders yet.
 - Cricket wicket values lean high: weak sides lose early wickets more often.
 - Elo cannot compare teams that never meet (associate T20I nations).
@@ -317,6 +339,18 @@ a different core than one delivery per play.
 
 Data is from [Cricsheet](https://cricsheet.org), under the Open Data Commons
 Attribution License.
+
+Batting hands and bowling styles come from the infobox of each player's English Wikipedia
+article (CC BY-SA), found through the ESPNcricinfo ID that Cricsheet's register gives each
+player and Wikidata links to the article. Wikipedia lets clients that send no contact details
+make 10 requests a minute, so the first download takes about ten minutes; after that only new
+players are looked up. The infobox text is kept as written in `data/raw/styles.csv` and read at
+build time. `src/innings/styles_known.csv` fills in players whose article gives no style.
+
+How much is known, measured on the full database: the bowler's type for 88% of all balls and
+the batter's hand for 89%. In ODIs, Tests and the franchise leagues it is 97–100%; in T20Is it
+is about 55%, because players from smaller nations mostly have no article. Tables say how much
+of their own balls they could place.
 
 ## News and live scores
 
