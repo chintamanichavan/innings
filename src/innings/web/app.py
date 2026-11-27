@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from ..stream import board
-from .routes import feed, forecasts, games, lab, market, news, season, stats, stream, teams
+from .routes import feed, forecasts, games, lab, market, news, season, slices, stats, stream, teams
 
 
 @asynccontextmanager
@@ -16,5 +16,5 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Innings", lifespan=lifespan)
-for module in (stats, teams, feed, games, forecasts, market, lab, news, stream, season):
+for module in (stats, teams, feed, games, forecasts, market, lab, news, stream, season, slices):
     app.include_router(module.router)
