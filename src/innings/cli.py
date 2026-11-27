@@ -143,6 +143,8 @@ def _parser() -> argparse.ArgumentParser:
     part.add_argument("year", type=int)
     part.add_argument("seasons", type=int)
     commands.add_parser("market", help="compare the model's chances with the betting market's")
+    command = commands.add_parser("measure", help="time a rebuild and the API; write data/measure/")
+    command.add_argument("--no-rebuild", action="store_true", help="only sizes and API speed")
     command = commands.add_parser("serve", help="run the web site")
     command.add_argument("--host", default="127.0.0.1")
     command.add_argument("--port", type=int, default=PORT)
@@ -171,6 +173,9 @@ def main() -> None:
         stream(args)
     elif args.command == "market":
         market()
+    elif args.command == "measure":
+        from . import measure
+        print(f"written to {measure.run(rebuild_too=not args.no_rebuild)}")
     elif args.command == "serve":
         serve(args.host, args.port)
 

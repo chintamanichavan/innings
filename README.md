@@ -310,6 +310,27 @@ not on the stream.
 - **Measured, not guessed.** Endpoints answer in under 70 ms warm. The front page ships
   about 60 kB of data.
 
+## Measuring the platform
+
+`uv run innings measure` rebuilds the database from files already downloaded (no network),
+times each step, records sizes, and times the API pages people open most: one cold call, then
+20 warm ones. It writes `data/measure/<date>.json`. `measure.snapshot(name)` freezes the raw
+files and the database, with a hash of every file, in `data/baseline/<name>`; `measure.compare`
+diffs two databases table by table, ignoring row order and float noise. Later work is judged
+against the frozen baseline, because the refresh job changes the live files every 12 hours.
+
+Baseline, 26 Nov 2026 (17,646 matches, 6,592,369 balls):
+
+| | |
+|---|---|
+| Rebuild from downloaded files | 101 s: loading 28 s, cricket value models 64 s, the rest 9 s |
+| Ball data as compressed Parquet | 32 MB |
+| Database file | 940 MB (three copies of the ball table plus derived tables) |
+| Raw downloads | 96 MB |
+| Two builds from the same files | all 29 tables equal |
+| Slowest pages, warm median | player 73 ms, player extra 61 ms, front page 60 ms |
+| Every other page, warm median | under 20 ms |
+
 ## Known limits
 
 - T20 leagues loaded: IPL, BBL, PSL, CPL, SA20, and for scouting the Syed Mushtaq Ali Trophy
