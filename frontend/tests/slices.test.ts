@@ -26,8 +26,9 @@ describe("slices", () => {
   });
 
   it("knows when a table leans on styles we only partly know", () => {
-    expect(needsStyles({ by: "type" })).toEqual({ type: true, hand: false });
-    expect(needsStyles({ hand: "L" })).toEqual({ type: false, hand: true });
-    expect(needsStyles({ by: "year" })).toEqual({ type: false, hand: false });
+    expect(needsStyles({ by: "type" })).toBe("type");
+    expect(needsStyles({ family: "spin" })).toBe("family");
+    expect(needsStyles({ hand: "L" })).toBe("hand");
+    expect(needsStyles({ by: "year" })).toBeNull();
   });
 });

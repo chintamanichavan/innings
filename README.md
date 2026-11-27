@@ -352,10 +352,27 @@ make 10 requests a minute, so the first download takes about ten minutes; after 
 players are looked up. The infobox text is kept as written in `data/raw/styles.csv` and read at
 build time. `src/innings/styles_known.csv` fills in players whose article gives no style.
 
-How much is known, measured on the full database: the bowler's type for 88% of all balls and
-the batter's hand for 89%. In ODIs, Tests and the franchise leagues it is 97–100%; in T20Is it
-is about 55%, because players from smaller nations mostly have no article. Tables say how much
-of their own balls they could place.
+Where Wikipedia has no style, pace or spin is estimated from the scorecards
+(`src/innings/pace_or_spin.py`): spinners get stumpings and bowl long spells in the middle
+overs; quicks get edges to the keeper, open the bowling and return at the death. A logistic
+regression learns this from bowlers whose style is known, and an estimate is kept only when the
+model is at least 90% sure. On 3,068 known bowlers it never trained on, those sure answers were
+right 96.5% of the time; they covered 59% of bowlers. A boosted-tree model was no more accurate
+and over-sure, so it was not used. The exact type (off-spin, leg-spin...) is never estimated,
+and a known style is never replaced.
+
+How much is known, measured on the full database (6.59 million balls):
+
+| | Exact bowling type | Pace or spin (with estimates) | Batting hand |
+|---|---|---|---|
+| All balls | 88% | 95% (7% estimated) | 89% |
+| ODIs and Tests | 99% | 99% | 99% |
+| IPL, BBL, PSL, CPL, SA20 | 99% | 99% | 99% |
+| The other T20 leagues | 90% | 95% | 92% |
+| T20Is | 55% | 82% | 57% |
+
+Players from smaller nations mostly have no article, which is why T20Is lag. Tables say how much
+of their own balls they could place, and how much of a pace-or-spin answer rests on estimates.
 
 ## News and live scores
 

@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useSetQuery } from "@/components/controls";
 import { StatTable, type Lead } from "@/components/StatTable";
 import { PlayerLink } from "@/components/teams";
-import { type SliceAnswer, type SliceRow, needsStyles } from "@/lib/slices";
+import { type SliceAnswer, type SliceRow, type StyleNeed, needsStyles } from "@/lib/slices";
 import { type Sport, link } from "@/lib/sport";
 
 const PLAYER_SPLITS = ["batter", "bowler", "player"];
@@ -48,8 +48,7 @@ export function SliceTable(props: SliceTableProps) {
   const lead: Lead<SliceRow>[] = [
     { label: "", render: (row) => <RowName sport={sport} by={by} row={row} /> },
   ];
-  const styles = needsStyles(answer.slice);
-  const known = styles.type ? answer.coverage.type : styles.hand ? answer.coverage.hand : null;
+  const need = needsStyles(answer.slice);
   return (
     <>
       <StatTable
@@ -64,27 +63,36 @@ export function SliceTable(props: SliceTableProps) {
       {answer.min > 0 && by && (
         <p className="note">Rows with fewer than {answer.min} balls are left out.</p>
       )}
-      {known != null && <StylesNote answer={answer} everywhere={known} type={styles.type} />}
+      {need && <StylesNote answer={answer} need={need} />}
     </>
   );
 }
 
+const WHAT: Record<NonNullable<StyleNeed>, string> = {
+  type: "the bowler's type",
+  family: "whether the bowler is pace or spin",
+  hand: "the batter's hand",
+};
+
+const share = (part: number) => `${Math.round(part * 100)}%`;
+
 /**
  * How much of the data a styles split or filter can see. A split names its own share: the
- * balls in its rows out of the whole slice. A filter can only quote the share across all balls.
+ * balls in its rows out of the whole slice. A filter can only quote the share across all
+ * balls. Pace or spin also says how much of it is estimated, and how good the estimates are.
  */
-function StylesNote(props: { answer: SliceAnswer; everywhere: number; type: boolean }) {
-  const { answer, everywhere, type } = props;
-  const what = type ? "the bowler's type" : "the batter's hand";
-  const split = ["type", "family", "hand"].includes(answer.slice.by ?? "");
+function StylesNote({ answer, need }: { answer: SliceAnswer; need: NonNullable<StyleNeed> }) {
+  const split = answer.slice.by === need;
   const placed = answer.rows.reduce((sum, row) => sum + (row.balls ?? 0), 0);
-  const share = (part: number) => `${Math.round(part * 100)}%`;
-  return (
-    <p className="note">
-      {split
-        ? `We know ${what} for ${share(placed / (answer.total.balls ?? 1))} of these balls. ` +
-          "The rest count in the total but in no row."
-        : `Only balls where we know ${what} are counted: ${share(everywhere)} of all balls.`}
-    </p>
-  );
+  const known = split ? placed / (answer.total.balls ?? 1) : answer.coverage[need];
+  const sentence = split
+    ? `We know ${WHAT[need]} for ${share(known)} of these balls. The rest count in the total but in no row.`
+    : `Only balls where we know ${WHAT[need]} are counted: ${share(known)} of all balls.`;
+  const accuracy = answer.coverage.estimate_accuracy;
+  const estimated =
+    need === "family" && answer.estimated && accuracy
+      ? ` ${share(answer.estimated)} of them rest on an estimate from the scorecards, which was ` +
+        `right ${share(accuracy)} of the time on bowlers whose style we know.`
+      : "";
+  return <p className="note">{sentence + estimated}</p>;
 }

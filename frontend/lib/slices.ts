@@ -38,11 +38,14 @@ export interface SliceAnswer {
   min: number;
   names: { batter: string | null; bowler: string | null };
   coverage: Coverage;
+  estimated: number | null; // share of this slice's pace-or-spin balls that rest on estimates
 }
 
 export interface Coverage {
   type: number; // share of balls whose bowler's type is known
   hand: number; // share of balls whose batter's hand is known
+  family: number; // share whose bowler is known or estimated to be pace or spin
+  estimate_accuracy: number | null; // how often a sure estimate was right, on known bowlers
 }
 
 /** The slice fields out of a page's query, and nothing else. */
@@ -101,12 +104,14 @@ export function splitsFor(role: "bat" | "bowl"): [key: string, label: string][] 
   ];
 }
 
-/** Does this split, or a filter, lean on the styles we only partly know? */
-export function needsStyles(slice: SliceQuery): { type: boolean; hand: boolean } {
-  return {
-    type: ["type", "family"].includes(slice.by ?? "") || Boolean(slice.type || slice.family),
-    hand: slice.by === "hand" || Boolean(slice.hand),
-  };
+/** Which partly known style, if any, a split or filter leans on. */
+export type StyleNeed = "type" | "family" | "hand" | null;
+
+export function needsStyles(slice: SliceQuery): StyleNeed {
+  if (slice.by === "type" || slice.type) return "type";
+  if (slice.by === "family" || slice.family) return "family";
+  if (slice.by === "hand" || slice.hand) return "hand";
+  return null;
 }
 
 /** The query for /api/slice, with a sort if one was chosen. */

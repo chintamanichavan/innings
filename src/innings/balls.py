@@ -3,6 +3,8 @@
 ck_styles says how each player bats (left or right hand) and bowls (one of six types),
 read from the Wikipedia infobox text in data/raw/styles.csv. A short hand-written list
 (`styles_known.csv`, next to this file) fills in players the infoboxes miss.
+ck_pace_spin holds pace-or-spin estimates for bowlers with no known style (see
+pace_or_spin.py); ck_balls marks the balls that lean on one with `family_estimated`.
 
 ck_balls is one row per ball with everything a slice can filter or count, already
 joined: the match's year, league and ground (the venue without its town), the phase of
@@ -17,6 +19,7 @@ from pathlib import Path
 
 import duckdb
 
+from . import pace_or_spin
 from .config import CRICKET_FORMATS
 from .ingest.styles import STYLES, plain
 
@@ -89,6 +92,20 @@ def _build_styles(con: duckdb.DuckDBPyConnection) -> None:
         con.executemany("insert into ck_styles values (?, ?, ?)", rows)
 
 
+def _build_estimates(con: duckdb.DuckDBPyConnection) -> None:
+    """ck_pace_spin: pace or spin for bowlers with no known style, where the model is sure.
+    Its measured accuracy goes in `constants`, so the site can quote it."""
+    con.execute("create or replace table ck_pace_spin (player_id varchar, family varchar)")
+    if not con.execute("select count(*) from ck_styles where bowl_type is not null").fetchone()[0]:
+        return                               # nothing known to learn from
+    placed, report = pace_or_spin.estimate(con, phase_key())
+    if placed:
+        con.executemany("insert into ck_pace_spin values (?, ?)", sorted(placed.items()))
+    con.execute("delete from constants where sport = 'ck' and name like 'pace_spin_%'")
+    con.executemany("insert into constants values ('ck', ?, ?)",
+                    [(f"pace_spin_{key}", float(value)) for key, value in report.items()])
+
+
 def phase_key() -> str:
     """SQL naming the phase of a ball (`powerplay`, `middle`, `death` or a Test's ball age)."""
     def one_format(fmt) -> str:
@@ -120,7 +137,8 @@ def _build_balls(con: duckdb.DuckDBPyConnection) -> None:
                b.phase, b.bat_team, b.field_team, b.batter_id, b.bowler_id,
                bat.hand as hand, bowl.bowl_type as bowl_type,
                case when bowl.bowl_type like '%pace' then 'pace' when bowl.bowl_type is not null
-                    then 'spin' end as bowl_family,
+                    then 'spin' else guess.family end as bowl_family,
+               bowl.bowl_type is null and guess.family is not null as family_estimated,
                not b.wide as faced, not b.wide and not b.noball as legal,
                b.runs_bat, b.runs - b.byes as conceded,
                coalesce(b.dismissed_id = b.batter_id, false) as out, b.bowler_wicket,
@@ -129,10 +147,12 @@ def _build_balls(con: duckdb.DuckDBPyConnection) -> None:
         join rates r using (gender, fmt, over_bucket, wkts_pre)
         left join ck_styles bat on bat.player_id = b.batter_id
         left join ck_styles bowl on bowl.player_id = b.bowler_id
+        left join ck_pace_spin guess on guess.player_id = b.bowler_id
         order by b.match_id, b.seq
     """)
 
 
 def build(con: duckdb.DuckDBPyConnection) -> None:
     _build_styles(con)
+    _build_estimates(con)
     _build_balls(con)

@@ -203,17 +203,25 @@ def run(s: Slice, sort: str = "") -> dict:
                      order by {order} desc nulls last, key limit {MAX_ROWS}""", [*params, floor])
         labels = _labels(s, [row["key"] for row in rows])
         rows = [dict(row, label=labels[row["key"]]) for row in (rows if sort else _order(s, rows))]
+    estimated = None
+    if s.family or s.by == "family":       # how much of the answer rests on estimates
+        estimated = q(f"""select avg(family_estimated::int) as share from ck_balls
+                          where {where} and bowl_family is not null""", params)[0]["share"]
     named = _player_names([player for player in (s.batter, s.bowler) if player])
     return dict(slice=s.as_dict(), title=describe(s), columns=columns(s.role), total=total, rows=rows,
                 min=floor, names=dict(batter=named.get(s.batter), bowler=named.get(s.bowler)),
-                coverage=coverage())
+                coverage=coverage(), estimated=estimated)
 
 
 @per_database()
 def coverage() -> dict:
-    """The share of balls whose bowler's type, and whose batter's hand, we know."""
-    row = q("select count(*) as n, count(bowl_type) as typed, count(hand) as handed from ck_balls")[0]
-    return dict(type=row["typed"] / row["n"], hand=row["handed"] / row["n"])
+    """The share of balls whose bowler's type, pace or spin, and batter's hand we know, and
+    how well the pace-or-spin estimates did on bowlers whose style was known."""
+    row = q("""select count(*) as n, count(bowl_type) as typed, count(hand) as handed,
+                      count(bowl_family) as family from ck_balls""")[0]
+    sure = q("select value from constants where sport = 'ck' and name = 'pace_spin_sure_accuracy'")
+    return dict(type=row["typed"] / row["n"], hand=row["handed"] / row["n"],
+                family=row["family"] / row["n"], estimate_accuracy=sure[0]["value"] if sure else None)
 
 
 # ---- in words ----
