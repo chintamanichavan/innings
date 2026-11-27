@@ -4,11 +4,12 @@ from __future__ import annotations
 import argparse
 import time
 from collections.abc import Callable
+from pathlib import Path
 
 import duckdb
 
 from . import aggregates, balls, insights
-from .config import PORT
+from .config import DB_PATH, PORT
 from .db import connect, rebuild
 from .ingest import cricsheet, styles
 from .models import cricket, predict
@@ -145,10 +146,40 @@ def _parser() -> argparse.ArgumentParser:
     commands.add_parser("market", help="compare the model's chances with the betting market's")
     command = commands.add_parser("measure", help="time a rebuild and the API; write data/measure/")
     command.add_argument("--no-rebuild", action="store_true", help="only sizes and API speed")
+    command = commands.add_parser("tags", help="hand tags: join to Cricsheet, agreement, backup")
+    parts = command.add_subparsers(dest="part", required=True)
+    parts.add_parser("check", help="how many tags join to a Cricsheet ball; the review queue")
+    part = parts.add_parser("agree", help="per-field agreement of two taggers on the same balls")
+    part.add_argument("one")
+    part.add_argument("other")
+    part = parts.add_parser("backup", help="copy the tag log into a folder and check it reads back")
+    part.add_argument("to", type=Path, help="a folder; best on another machine or drive")
     command = commands.add_parser("serve", help="run the web site")
     command.add_argument("--host", default="127.0.0.1")
     command.add_argument("--port", type=int, default=PORT)
     return parser
+
+
+def tags(args) -> None:
+    from . import tagging
+    if args.part == "check":
+        con = duckdb.connect(str(DB_PATH), read_only=True)
+        report = tagging.join(con, list(tagging.latest().values()))
+        share = f"{report['share']:.1%}" if report["share"] is not None else "-"
+        print(f"{report['tags']} tags, {report['joined']} join to a Cricsheet ball ({share})")
+        for item in report["queue"]:
+            tag = item["tag"]
+            print(f"  {item['reason']}: {tag['tagger']} {tag['match_id']} "
+                  f"innings {tag['innings']} {tag['over']}.{tag['ball']}")
+    elif args.part == "agree":
+        report = tagging.agreement(tagging.latest(), args.one, args.other)
+        print(f"{report['balls']} balls tagged by both")
+        for name, field in report["fields"].items():
+            agreed = "-" if field["agreed"] is None else f"{field['agreed']:.0%}"
+            kappa = "-" if field["kappa"] is None else f"{field['kappa']:.2f}"
+            print(f"  {name:9} {field['balls']:6} balls  agreed {agreed:>4}  kappa {kappa}")
+    elif args.part == "backup":
+        print(f"backed up and read back: {tagging.backup(args.to)}")
 
 
 def main() -> None:
@@ -176,6 +207,8 @@ def main() -> None:
     elif args.command == "measure":
         from . import measure
         print(f"written to {measure.run(rebuild_too=not args.no_rebuild)}")
+    elif args.command == "tags":
+        tags(args)
     elif args.command == "serve":
         serve(args.host, args.port)
 
