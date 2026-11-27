@@ -17,20 +17,26 @@ PORT = 8453
 class CricketFormat:
     name: str
     balls: int | None                           # balls in a full innings; None means no limit
-    phases: tuple[tuple[str, int | None], ...]  # (label, first over after the phase); None ends the last
+    # (key, label, first over after the phase); None ends the last
+    phases: tuple[tuple[str, str, int | None], ...]
     profile_floor: int                          # career balls needed for a skill profile
 
 
 CRICKET_FORMATS = {
     "T20": CricketFormat(
-        "T20", 120, (("Powerplay (overs 1-6)", 6), ("Middle (7-15)", 15), ("Death (16-20)", None)),
+        "T20", 120,
+        (("powerplay", "Powerplay (overs 1-6)", 6), ("middle", "Middle (7-15)", 15),
+         ("death", "Death (16-20)", None)),
         profile_floor=500),
     "ODI": CricketFormat(
-        "ODI", 300, (("Powerplay (overs 1-10)", 10), ("Middle (11-40)", 40), ("Death (41-50)", None)),
+        "ODI", 300,
+        (("powerplay", "Powerplay (overs 1-10)", 10), ("middle", "Middle (11-40)", 40),
+         ("death", "Death (41-50)", None)),
         profile_floor=1000),
     "Test": CricketFormat(
         "Test", None,
-        (("New ball (overs 1-20)", 20), ("Old ball (21-80)", 80), ("Second new ball (81+)", None)),
+        (("new-ball", "New ball (overs 1-20)", 20), ("old-ball", "Old ball (21-80)", 80),
+         ("second-new-ball", "Second new ball (81+)", None)),
         profile_floor=2000),
 }
 CK_BALLS = {name: fmt.balls for name, fmt in CRICKET_FORMATS.items()}

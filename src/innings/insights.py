@@ -143,8 +143,8 @@ SPLIT_NUMBERS = ("n", "runs", "outs", "rae", "wpa")
 def _phase_of_innings() -> str:
     """SQL naming the phase of a ball from its over, using each format's own phase boundaries."""
     def one_format(fmt) -> str:
-        branches = [f"""when "over" < {end} then '{label}'""" for label, end in fmt.phases[:-1]]
-        return f"case {' '.join(branches)} else '{fmt.phases[-1][0]}' end"
+        branches = [f"""when "over" < {end} then '{label}'""" for _, label, end in fmt.phases[:-1]]
+        return f"case {' '.join(branches)} else '{fmt.phases[-1][1]}' end"
 
     *limited, last = CRICKET_FORMATS.values()
     branches = [f"when fmt = '{fmt.name}' then {one_format(fmt)}" for fmt in limited]

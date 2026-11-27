@@ -1,0 +1,4 @@
+# Batting hand (L or R) and bowling type for players whose Wikipedia infobox is missing or
+# unreadable. A blank keeps what the infobox said. Types: right-pace, left-pace, off-spin,
+# leg-spin, left-orthodox, left-wrist.
+player_id,name,hand,type

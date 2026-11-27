@@ -7,10 +7,10 @@ from collections.abc import Callable
 
 import duckdb
 
-from . import aggregates, insights
+from . import aggregates, balls, insights
 from .config import PORT
 from .db import connect, rebuild
-from .ingest import cricsheet
+from .ingest import cricsheet, styles
 from .models import cricket, predict
 
 # Each step reads what the ones before it wrote, so the order matters.
@@ -19,6 +19,7 @@ BUILD_STEPS: list[tuple[str, Callable]] = [
     ("season tables", aggregates.build),
     ("match prediction", predict.build),
     ("insights", insights.build),
+    ("ball table", balls.build),
 ]
 
 
@@ -31,6 +32,7 @@ def _timed(name: str, step: Callable, *args) -> None:
 
 def ingest(con: duckdb.DuckDBPyConnection, refresh: bool) -> None:
     _timed("cricket data", cricsheet.ingest, con, refresh)
+    _timed("playing styles", styles.ingest, con, refresh)
 
 
 def build(con: duckdb.DuckDBPyConnection) -> None:
